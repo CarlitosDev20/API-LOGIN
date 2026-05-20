@@ -1,28 +1,35 @@
+require('dotenv').config();
+
 const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
+
 const app = express();
+
 app.use(express.json());
 app.use(cors());
 
-const conexion = mysql.createConnection({
-    host:'localhost',
-    user:'root',
-    password:'',
-    database:'db_cesal'
+// POOL MYSQL AWS
+const conexion = mysql.createPool({
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 0
 });
 
-conexion.connect((error)=>{
-    if(error){
-        console.log(error);
-    }
-    else{
-        console.log('conectado a mysql');
-}
-    })
+console.log('Servidor iniciado');
 
-//LOGIN
-app.post('/login',(req,res)=>{
+// LOGIN
+app.post('/login', (req, res) => {
+
     const correo = req.body.correo;
     const contrasena = req.body.contrasena;
 
@@ -30,36 +37,41 @@ app.post('/login',(req,res)=>{
     SELECT * FROM Usuario
     WHERE correo = ?
     `;
-conexion.query(sql,[correo],(error,resultado)=>{
-    if(error){
-        console.log(error);
 
-return res.status(500).json({
-    mensaje: 'Error MySQL',
-    error: error.message,
-    code: error.code
-});
-    }
+    conexion.query(sql, [correo], (error, resultado) => {
 
-    if(resultado.length === 0){
-        return res.json({
-            mensaje:'Usuario no existe'
-        });
-    }
-     const usuario = resultado[0];
+        if (error) {
 
-        if(contrasena === usuario.contrasena){
+            console.log(error);
 
-            res.json({
-                mensaje:'Login correcto'
+            return res.status(500).json({
+                mensaje: 'Error MySQL',
+                error: error.message,
+                code: error.code
             });
 
         }
 
-        else{
+        if (resultado.length === 0) {
+
+            return res.json({
+                mensaje: 'Usuario no existe'
+            });
+
+        }
+
+        const usuario = resultado[0];
+
+        if (contrasena === usuario.contrasena) {
 
             res.json({
-                mensaje:'Contraseña incorrecta'
+                mensaje: 'Login correcto'
+            });
+
+        } else {
+
+            res.json({
+                mensaje: 'Contraseña incorrecta'
             });
 
         }
@@ -68,9 +80,8 @@ return res.status(500).json({
 
 });
 
-
 // CAMBIAR PASSWORD
-app.put('/cambiar-password',(req,res)=>{
+app.put('/cambiar-password', (req, res) => {
 
     const correo = req.body.correo;
     const nueva = req.body.nueva;
@@ -81,29 +92,33 @@ app.put('/cambiar-password',(req,res)=>{
     WHERE correo = ?
     `;
 
-    conexion.query(sql,[nueva,correo],(error,resultado)=>{
+    conexion.query(sql, [nueva, correo], (error) => {
 
-        if(error){
+        if (error) {
+
             console.log(error);
 
-return res.status(500).json({
-    mensaje: 'Error MySQL',
-    error: error.message,
-    code: error.code
-});
+            return res.status(500).json({
+                mensaje: 'Error MySQL',
+                error: error.message,
+                code: error.code
+            });
+
         }
 
         res.json({
-            mensaje:'Contraseña actualizada'
+            mensaje: 'Contraseña actualizada'
         });
 
     });
 
 });
 
+// PUERTO RENDER
+const PORT = process.env.PORT || 3000;
 
-app.listen(3000,()=>{
+app.listen(PORT, () => {
 
-    console.log('Servidor corriendo');
+    console.log(`Servidor corriendo en puerto ${PORT}`);
 
 });
