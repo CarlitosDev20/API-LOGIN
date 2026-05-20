@@ -32,7 +32,13 @@ app.post('/login',(req,res)=>{
     `;
 conexion.query(sql,[correo],(error,resultado)=>{
     if(error){
-        return res.json(error);
+        console.log(error);
+
+return res.status(500).json({
+    mensaje: 'Error MySQL',
+    error: error.message,
+    code: error.code
+});
     }
 
     if(resultado.length === 0){
@@ -78,7 +84,13 @@ app.put('/cambiar-password',(req,res)=>{
     conexion.query(sql,[nueva,correo],(error,resultado)=>{
 
         if(error){
-            return res.json(error);
+            console.log(error);
+
+return res.status(500).json({
+    mensaje: 'Error MySQL',
+    error: error.message,
+    code: error.code
+});
         }
 
         res.json({
